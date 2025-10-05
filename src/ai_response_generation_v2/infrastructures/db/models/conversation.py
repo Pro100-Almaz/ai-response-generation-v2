@@ -92,6 +92,8 @@ class MessageModel:
     role: Mapped[str] = mapped_column(String(length=32), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     model: Mapped[str | None] = mapped_column(String(length=128), nullable=True)
+    ai_type: Mapped[str] = mapped_column(String(length=64), nullable=False, default="unknown")
+    message_type: Mapped[str] = mapped_column(String(length=32), nullable=False, default="text")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -112,6 +114,8 @@ class MessageModel:
             role=self.role,  # type: ignore[arg-type]
             content=self.content,
             model=self.model,
+            ai_type=self.ai_type,  # type: ignore[arg-type]
+            message_type=self.message_type,  # type: ignore[arg-type]
             created_at=self.created_at,
         )
 
@@ -123,6 +127,8 @@ class MessageModel:
             role=entity.role,
             content=entity.content,
             model=entity.model,
+            ai_type=entity.ai_type,
+            message_type=entity.message_type,
             created_at=entity.created_at,
         )
 

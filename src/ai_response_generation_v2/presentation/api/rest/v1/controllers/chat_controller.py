@@ -21,12 +21,14 @@ from ai_response_generation_v2.application.use_cases import (
 from ai_response_generation_v2.presentation.api.rest.v1.schemas.chat import (
     ChatCompletionRequest,
     ChatCompletionResponse,
+    ChatModelListResponse,
     ConversationCreateRequest,
     ConversationResponse,
     ConversationWithMessagesResponse,
     MessageCreateRequest,
     MessageResponse,
 )
+from ai_response_generation_v2.presentation.services.ai_catalog import AICatalogService
 
 
 router = APIRouter(prefix="/v1/chat", tags=["Chat"])
@@ -84,6 +86,8 @@ async def add_message(
         role=_to_message_role(payload.role),
         content=payload.content,
         model=payload.model,
+        ai_type=payload.ai_type or "unknown",
+        message_type=payload.message_type,
     )
     result = await use_case.execute(dto)
     return MessageResponse.model_validate(result)
@@ -104,6 +108,8 @@ async def generate_completion(
         role=_to_message_role(payload.message.role),
         content=payload.message.content,
         model=payload.message.model,
+        ai_type=payload.message.ai_type or payload.provider,
+        message_type=payload.message.message_type,
     )
 
     stored_user_message = await add_message_use_case.execute(user_message_dto)
@@ -115,6 +121,8 @@ async def generate_completion(
         model=payload.model or stored_user_message.model or "",
         temperature=payload.temperature,
         max_tokens=payload.max_tokens,
+        provider=payload.provider,
+        instrument=payload.instrument,
     )
 
     stored_assistant_message = await add_message_use_case.execute(
@@ -123,6 +131,8 @@ async def generate_completion(
             role="assistant",
             content=assistant_message.content,
             model=assistant_message.model,
+            ai_type=assistant_message.ai_type,
+            message_type=assistant_message.message_type,
         )
     )
 
@@ -131,4 +141,9 @@ async def generate_completion(
         user_message=MessageResponse.model_validate(stored_user_message),
         assistant_message=MessageResponse.model_validate(stored_assistant_message),
     )
+
+
+@router.get("/models", response_model=ChatModelListResponse)
+async def list_models() -> ChatModelListResponse:
+    return ChatModelListResponse.model_validate(AICatalogService().list_models())
 

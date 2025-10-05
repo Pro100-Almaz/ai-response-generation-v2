@@ -1,11 +1,13 @@
 from dishka import Provider
 
 from ai_response_generation_v2.config.ioc.providers import (
+    AIProvider,
     BrokerProvider,
     CacheProvider,
     DatabaseProvider,
     HTTPClientProvider,
     MapperProvider,
+    OpenAIProvider,
     RepositoryProvider,
     ServiceProvider,
     SettingsProvider,
@@ -25,5 +27,7 @@ def get_providers() -> list[Provider]:
         ServiceProvider(),
         MapperProvider(),
         CacheProvider(),
+        OpenAIProvider(),
+        AIProvider(),
         UseCaseProvider(),
     ]

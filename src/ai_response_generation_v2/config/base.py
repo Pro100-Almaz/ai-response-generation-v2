@@ -61,6 +61,8 @@ class Settings(BaseSettings):
     )
     openai_temperature: float = Field(0.7, alias="OPENAI_TEMPERATURE")
     openai_max_tokens: int | None = Field(None, alias="OPENAI_MAX_TOKENS")
+    openai_available_models: str = Field("gpt-4o-mini", alias="OPENAI_AVAILABLE_MODELS")
+    enabled_ai_providers: list[str] = Field(["openai"], alias="AI_ENABLED_PROVIDERS")
 
     cors_origins: list[str] = Field(
         ["http://localhost:3000", "http://localhost:8080"], alias="CORS_ORIGINS"

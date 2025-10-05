@@ -79,7 +79,7 @@ docker-up: ## Start all services with docker-compose
 	docker-compose up -d
 
 docker-up-dev: ## Start development environment
-	docker-compose --profile dev up -d
+	docker compose --profile dev up -d
 
 docker-down: ## Stop all services
 	docker-compose down
@@ -88,7 +88,7 @@ docker-logs: ## Show logs for all services
 	docker-compose logs -f
 
 docker-logs-app: ## Show logs for application
-	docker-compose logs -f app
+	docker compose logs -f app
 
 docker-shell: ## Open shell in running app container
 	docker-compose exec app bash

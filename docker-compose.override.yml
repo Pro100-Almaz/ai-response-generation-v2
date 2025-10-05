@@ -1,6 +1,6 @@
 # YAML Anchors for development overrides
 x-dev-environment: &dev-environment
-  ENVIRONMENT: development
+  ENVIRONMENT: dev
   LOG_LEVEL: DEBUG
 
 x-dev-volumes: &dev-volumes

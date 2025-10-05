@@ -4,8 +4,13 @@ from dataclasses import dataclass
 
 import structlog
 
-from ai_response_generation_v2.application.dtos import CreateMessageDTO, MessageDTO
-from ai_response_generation_v2.application.interfaces.openai import OpenAIChatClientProtocol
+from uuid import UUID
+
+from ai_response_generation_v2.application.dtos import MessageDTO
+from ai_response_generation_v2.application.interfaces.ai import (
+    AIChatClientFactoryProtocol,
+    AIChatClientProtocol,
+)
 
 
 logger = structlog.get_logger(__name__)
@@ -13,7 +18,7 @@ logger = structlog.get_logger(__name__)
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GenerateResponseUseCase:
-    openai_client: OpenAIChatClientProtocol
+    ai_client_factory: AIChatClientFactoryProtocol
 
     async def execute(
         self,
@@ -23,6 +28,8 @@ class GenerateResponseUseCase:
         model: str,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        provider: str = "openai",
+        instrument: str = "chat",
     ) -> MessageDTO:
         logger.info(
             "Generating response",
@@ -31,10 +38,13 @@ class GenerateResponseUseCase:
         )
 
         messages = [*history, user_message]
-        return await self.openai_client.generate_response(
+        client: AIChatClientProtocol = self.ai_client_factory.get_client(provider, instrument)
+        return await client.generate_response(
             messages=messages,
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
+            provider=provider,
+            instrument=instrument,
         )
 

@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field
 
 
 MessageRoleLiteral = Literal["user", "assistant", "system"]
+AIProviderLiteral = Literal["openai"]
+AIInstrumentLiteral = Literal["chat"]
+MessageTypeLiteral = Literal["text", "image", "video", "audio", "file", "other"]
 
 
 class ConversationCreateRequest(BaseModel):
@@ -19,6 +22,8 @@ class MessageCreateRequest(BaseModel):
     role: MessageRoleLiteral
     content: str = Field(..., min_length=1)
     model: str | None = None
+    ai_type: AIProviderLiteral | None = None
+    message_type: MessageTypeLiteral = "text"
 
 
 class ChatCompletionRequest(BaseModel):
@@ -26,6 +31,8 @@ class ChatCompletionRequest(BaseModel):
     model: str | None = None
     temperature: float | None = Field(None, ge=0, le=2)
     max_tokens: int | None = Field(None, ge=1)
+    provider: AIProviderLiteral = Field("openai")
+    instrument: AIInstrumentLiteral = Field("chat")
 
 
 class ConversationResponse(BaseModel):
@@ -42,6 +49,8 @@ class MessageResponse(BaseModel):
     role: MessageRoleLiteral
     content: str
     model: str | None
+    ai_type: AIProviderLiteral
+    message_type: MessageTypeLiteral
     created_at: datetime
 
 
@@ -54,4 +63,18 @@ class ChatCompletionResponse(BaseModel):
     conversation: ConversationResponse
     user_message: MessageResponse
     assistant_message: MessageResponse
+
+
+class ChatModelInstrumentResponse(BaseModel):
+    name: AIInstrumentLiteral
+    models: list[str]
+
+
+class ChatModelProviderResponse(BaseModel):
+    name: AIProviderLiteral
+    instruments: list[ChatModelInstrumentResponse]
+
+
+class ChatModelListResponse(BaseModel):
+    providers: list[ChatModelProviderResponse]
 

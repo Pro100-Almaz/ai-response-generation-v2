@@ -7,7 +7,7 @@ from uuid import uuid4
 from openai import AsyncOpenAI
 
 from ai_response_generation_v2.application.dtos.conversation import MessageDTO
-from ai_response_generation_v2.application.interfaces.openai import OpenAIChatClientProtocol
+from ai_response_generation_v2.application.interfaces.ai import AIChatClientProtocol
 
 
 def _extract_content(raw: str | Sequence[dict[str, str]] | None) -> str:
@@ -22,7 +22,7 @@ def _extract_content(raw: str | Sequence[dict[str, str]] | None) -> str:
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
-class OpenAIChatClient(OpenAIChatClientProtocol):
+class OpenAIChatClient(AIChatClientProtocol):
     client: AsyncOpenAI
     default_model: str | None = None
     default_temperature: float | None = None
@@ -34,7 +34,13 @@ class OpenAIChatClient(OpenAIChatClientProtocol):
         model: str,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        provider: str = "openai",
+        instrument: str = "chat",
     ) -> MessageDTO:
+        if provider != "openai":
+            raise ValueError(f"Unsupported provider '{provider}' for OpenAIChatClient")
+        if instrument != "chat":
+            raise ValueError(f"Unsupported instrument '{instrument}' for OpenAIChatClient")
         if not messages:
             raise ValueError("Messages history cannot be empty when generating a response")
 
@@ -66,5 +72,7 @@ class OpenAIChatClient(OpenAIChatClientProtocol):
             role="assistant",
             content=content,
             model=used_model,
+            ai_type="openai",
+            message_type="text",
         )
 

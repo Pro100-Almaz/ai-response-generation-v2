@@ -7,6 +7,8 @@ from uuid import UUID
 
 
 MessageRole = Literal["user", "assistant", "system"]
+MessageType = Literal["text", "image", "video", "audio", "file", "other"]
+AIType = Literal["openai", "gemini", "deepseek", "unknown"]
 
 
 @final
@@ -17,6 +19,8 @@ class MessageDTO:
     role: MessageRole
     content: str
     model: str | None = None
+    ai_type: AIType = "unknown"
+    message_type: MessageType = "text"
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -51,4 +55,6 @@ class CreateMessageDTO:
     role: MessageRole
     content: str
     model: str | None = None
+    ai_type: AIType = "unknown"
+    message_type: MessageType = "text"
 

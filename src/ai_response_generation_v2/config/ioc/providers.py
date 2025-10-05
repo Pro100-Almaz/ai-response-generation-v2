@@ -31,9 +31,9 @@ from ai_response_generation_v2.infrastructures.db.uow import UnitOfWorkSQLAlchem
 from ai_response_generation_v2.infrastructures.http.clients import (
     ExternalMuseumAPIClient, PublicCatalogAPIClient
 )
-from ai_response_generation_v2.infrastructures.openai.chat_client import OpenAIChatClient
-
+from ai_response_generation_v2.infrastructures.ai.factory import AIChatClientFactory
 from ai_response_generation_v2.infrastructures.mappers.artifact import InfrastructureArtifactMapper
+from ai_response_generation_v2.infrastructures.openai.chat_client import OpenAIChatClient
 
 
 class SettingsProvider(Provider):
@@ -256,9 +256,9 @@ class UseCaseProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def get_generate_response_use_case(
         self,
-        openai_client: OpenAIChatClient,
+        ai_client_factory: AIChatClientFactory,
     ) -> GenerateResponseUseCase:
-        return GenerateResponseUseCase(openai_client=openai_client)
+        return GenerateResponseUseCase(ai_client_factory=ai_client_factory)
 
 
 class OpenAIProvider(Provider):
@@ -271,3 +271,14 @@ class OpenAIProvider(Provider):
             default_temperature=settings.openai_temperature,
             default_max_tokens=settings.openai_max_tokens,
         )
+
+
+class AIProvider(Provider):
+    @provide(scope=Scope.APP)
+    def get_ai_client_factory(
+        self,
+        openai_client: OpenAIChatClient,
+    ) -> AIChatClientFactory:
+        factory = AIChatClientFactory()
+        factory.register_client("openai", "chat", openai_client)
+        return factory
