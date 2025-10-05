@@ -1,0 +1,238 @@
+# YAML Anchors for common configurations
+x-common-healthcheck: &common-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
+# Network configuration is handled individually per service
+
+x-common-volume: &common-volume
+  driver: local
+
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+
+x-app-environment: &app-environment
+  ENVIRONMENT: ${ENVIRONMENT:-production}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  DEBUG: ${DEBUG:-false}
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_SERVER: ${POSTGRES_SERVER}
+  POSTGRES_PORT: ${POSTGRES_PORT}
+  POSTGRES_DB: ${POSTGRES_DB}
+  MUSEUM_API_BASE: ${MUSEUM_API_BASE}
+  CATALOG_API_BASE: ${CATALOG_API_BASE}
+  HTTP_TIMEOUT: ${HTTP_TIMEOUT}
+  BROKER_URL: ${BROKER_URL}
+  BROKER_NEW_ARTIFACT_QUEUE: ${BROKER_NEW_ARTIFACT_QUEUE}
+  PUBLISH_RETRIES: ${PUBLISH_RETRIES}
+  PUBLISH_RETRY_BACKOFF: ${PUBLISH_RETRY_BACKOFF}
+
+x-app-dev-environment: &app-dev-environment
+  ENVIRONMENT: ${ENVIRONMENT:-dev}
+  LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+  DEBUG: ${DEBUG:-true}
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_SERVER: ${POSTGRES_SERVER}
+  POSTGRES_PORT: ${POSTGRES_PORT}
+  POSTGRES_DB: ${POSTGRES_DB}
+  MUSEUM_API_BASE: ${MUSEUM_API_BASE}
+  CATALOG_API_BASE: ${CATALOG_API_BASE}
+  HTTP_TIMEOUT: ${HTTP_TIMEOUT}
+  BROKER_URL: ${BROKER_URL}
+  BROKER_NEW_ARTIFACT_QUEUE: ${BROKER_NEW_ARTIFACT_QUEUE}
+  PUBLISH_RETRIES: ${PUBLISH_RETRIES}
+  PUBLISH_RETRY_BACKOFF: ${PUBLISH_RETRY_BACKOFF}
+
+# Test environment configuration is handled individually per service
+
+# Migration configuration is handled individually per service
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: ai_response_generation_v2-postgres-test
+    environment:
+      POSTGRES_DB: fastapi_db_test
+      POSTGRES_USER: fastapi_user
+      POSTGRES_PASSWORD: fastapi_strong_pwd
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastapi_user -d fastapi_db_test"]
+      <<: *common-healthcheck
+    networks: [apps-net]
+    profiles:
+      - test
+
+  redis:
+    image: redis:7-alpine
+    container_name: ai_response_generation_v2-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [apps-net]
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: ai_response_generation_v2-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks: [apps-net]
+
+  app:
+    build:
+      <<: *app-build
+      target: production
+    container_name: ai_response_generation_v2-app
+    environment:
+      <<: *app-environment
+    depends_on:
+
+      redis:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+    ports:
+      - "8000:8000"
+    volumes:
+      - app_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks: [apps-net]
+
+  app-dev:
+    build:
+      <<: *app-build
+      target: development
+    container_name: ai_response_generation_v2-app-dev
+    environment:
+      <<: *app-dev-environment
+    depends_on:
+
+      redis:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+      - ./alembic:/app/alembic:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+      - app_logs:/app/logs
+    restart: unless-stopped
+    networks: [apps-net]
+    profiles:
+      - dev
+
+
+  migrate:
+    build:
+      <<: *app-build
+      target: production
+    container_name: ai_response_generation_v2-migrate
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/app/scripts:ro
+    command: ["/app/scripts/migrate.sh"]
+    networks: [apps-net]
+    profiles:
+      - migrate
+
+  test:
+    build:
+      <<: *app-build
+      target: testing
+    container_name: ai_response_generation_v2-test
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-testing}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEBUG: ${DEBUG:-false}
+      POSTGRES_USER: fastapi_user
+      POSTGRES_PASSWORD: fastapi_strong_pwd
+      POSTGRES_SERVER: postgres-test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: fastapi_db_test
+      MUSEUM_API_BASE: ${MUSEUM_API_BASE}
+      CATALOG_API_BASE: ${CATALOG_API_BASE}
+      HTTP_TIMEOUT: ${HTTP_TIMEOUT}
+      BROKER_URL: ${BROKER_URL}
+      BROKER_NEW_ARTIFACT_QUEUE: ${BROKER_NEW_ARTIFACT_QUEUE}
+      PUBLISH_RETRIES: ${PUBLISH_RETRIES}
+      PUBLISH_RETRY_BACKOFF: ${PUBLISH_RETRY_BACKOFF}
+    depends_on:
+
+      postgres-test:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+      - ./alembic:/app/alembic:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+      - test_reports:/app/htmlcov
+    networks: [apps-net]
+    profiles:
+      - test
+
+
+
+volumes:
+
+  redis_data:
+    <<: *common-volume
+
+  rabbitmq_data:
+    <<: *common-volume
+
+  app_logs:
+    <<: *common-volume
+
+  test_reports:
+    <<: *common-volume
+
+
+networks:
+  apps-net:
+    external: true
+    name: apps-net
