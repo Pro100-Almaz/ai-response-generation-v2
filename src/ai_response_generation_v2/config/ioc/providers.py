@@ -32,6 +32,7 @@ from ai_response_generation_v2.infrastructures.http.clients import (
     ExternalMuseumAPIClient, PublicCatalogAPIClient
 )
 from ai_response_generation_v2.infrastructures.ai.factory import AIChatClientFactory
+from ai_response_generation_v2.infrastructures.auth.service import MonolithAuthorizationService
 from ai_response_generation_v2.infrastructures.mappers.artifact import InfrastructureArtifactMapper
 from ai_response_generation_v2.infrastructures.openai.chat_client import OpenAIChatClient
 
@@ -282,3 +283,22 @@ class AIProvider(Provider):
         factory = AIChatClientFactory()
         factory.register_client("openai", "chat", openai_client)
         return factory
+
+
+class AuthorizationProvider(Provider):
+    @provide(scope=Scope.APP)
+    def get_monolith_authorizer(
+        self,
+        settings: Settings,
+        http_client: AsyncClient,
+    ) -> MonolithAuthorizationService:
+        with open(settings.monolith_public_key_path, "r", encoding="utf-8") as key_file:
+            public_key = key_file.read()
+
+        return MonolithAuthorizationService(
+            base_url=settings.monolith_base_url,
+            audience=settings.monolith_auth_audience,
+            timeout=settings.monolith_auth_timeout,
+            client=http_client,
+            public_key=public_key,
+        )

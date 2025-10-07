@@ -72,7 +72,10 @@ class OpenAIChatClient(AIChatClientProtocol):
             role="assistant",
             content=content,
             model=used_model,
-            ai_type="openai",
+            provider="openai",
+            instrument="chat",
             message_type="text",
+            temperature=temperature_value,
+            max_tokens=max_tokens_value,
         )
 

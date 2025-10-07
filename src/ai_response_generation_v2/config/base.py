@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     openai_available_models: str = Field("gpt-4o-mini", alias="OPENAI_AVAILABLE_MODELS")
     enabled_ai_providers: list[str] = Field(["openai"], alias="AI_ENABLED_PROVIDERS")
 
+    monolith_base_url: str = Field("", alias="MONOLITH_BASE_URL")
+    monolith_auth_audience: str = Field("api://ai-response-generation", alias="MONOLITH_AUTH_AUDIENCE")
+    monolith_auth_timeout: float = Field(3.0, alias="MONOLITH_AUTH_TIMEOUT")
+    monolith_public_key_path: str = Field(
+        "./presentation/mocks/keys/monolith_public_key.pem",
+        alias="MONOLITH_PUBLIC_KEY_PATH",
+    )
+
     cors_origins: list[str] = Field(
         ["http://localhost:3000", "http://localhost:8080"], alias="CORS_ORIGINS"
     )

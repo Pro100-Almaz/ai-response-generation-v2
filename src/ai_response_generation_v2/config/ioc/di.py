@@ -2,6 +2,7 @@ from dishka import Provider
 
 from ai_response_generation_v2.config.ioc.providers import (
     AIProvider,
+    AuthorizationProvider,
     BrokerProvider,
     CacheProvider,
     DatabaseProvider,
@@ -29,5 +30,6 @@ def get_providers() -> list[Provider]:
         CacheProvider(),
         OpenAIProvider(),
         AIProvider(),
+        AuthorizationProvider(),
         UseCaseProvider(),
     ]

@@ -7,7 +7,8 @@ from uuid import UUID
 
 
 Role = Literal["user", "assistant", "system"]
-AIType = Literal["openai", "gemini", "deepseek", "unknown"]
+AIProvider = Literal["openai", "gemini", "deepseek", "unknown"]
+AIInstrument = Literal["chat", "vision", "audio", "other"]
 MessageType = Literal["text", "image", "video", "audio", "file", "other"]
 
 
@@ -19,8 +20,11 @@ class MessageEntity:
     role: Role
     content: str
     model: str | None = None
-    ai_type: AIType = "unknown"
+    provider: AIProvider = "unknown"
+    instrument: AIInstrument = "chat"
     message_type: MessageType = "text"
+    temperature: float | None = None
+    max_tokens: int | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 

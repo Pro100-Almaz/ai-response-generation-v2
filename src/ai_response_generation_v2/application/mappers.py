@@ -99,8 +99,11 @@ class ConversationMapper(ConversationMapperProtocol):
             role=dto.role,
             content=dto.content,
             model=dto.model,
-            ai_type=dto.ai_type,
+            provider=dto.provider,
+            instrument=dto.instrument,
             message_type=dto.message_type,
+            temperature=dto.temperature,
+            max_tokens=dto.max_tokens,
         )
 
     def to_message_dto(self, entity: MessageEntity) -> MessageDTO:
@@ -110,8 +113,11 @@ class ConversationMapper(ConversationMapperProtocol):
             role=entity.role,
             content=entity.content,
             model=entity.model,
-            ai_type=entity.ai_type,
+            provider=entity.provider,
+            instrument=entity.instrument,
             message_type=entity.message_type,
+            temperature=entity.temperature,
+            max_tokens=entity.max_tokens,
             created_at=entity.created_at,
         )
 

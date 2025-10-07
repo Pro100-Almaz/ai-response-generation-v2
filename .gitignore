@@ -183,3 +183,5 @@ cython_debug/
 # Editor specific files and folders
 .idea
 .vscode
+
+/secrets

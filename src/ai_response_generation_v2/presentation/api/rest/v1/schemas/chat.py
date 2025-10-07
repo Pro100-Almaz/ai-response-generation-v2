@@ -22,17 +22,11 @@ class MessageCreateRequest(BaseModel):
     role: MessageRoleLiteral
     content: str = Field(..., min_length=1)
     model: str | None = None
-    ai_type: AIProviderLiteral | None = None
-    message_type: MessageTypeLiteral = "text"
-
-
-class ChatCompletionRequest(BaseModel):
-    message: MessageCreateRequest
-    model: str | None = None
-    temperature: float | None = Field(None, ge=0, le=2)
-    max_tokens: int | None = Field(None, ge=1)
     provider: AIProviderLiteral = Field("openai")
     instrument: AIInstrumentLiteral = Field("chat")
+    message_type: MessageTypeLiteral = "text"
+    temperature: float | None = Field(None, ge=0, le=2)
+    max_tokens: int | None = Field(None, ge=1)
 
 
 class ConversationResponse(BaseModel):
@@ -49,9 +43,17 @@ class MessageResponse(BaseModel):
     role: MessageRoleLiteral
     content: str
     model: str | None
-    ai_type: AIProviderLiteral
+    provider: AIProviderLiteral
+    instrument: AIInstrumentLiteral
     message_type: MessageTypeLiteral
+    temperature: float | None
+    max_tokens: int | None
     created_at: datetime
+
+
+class MessageWithReplyResponse(BaseModel):
+    user_message: MessageResponse
+    assistant_message: MessageResponse
 
 
 class ConversationWithMessagesResponse(BaseModel):

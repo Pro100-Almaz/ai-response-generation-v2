@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from uuid import UUID
 
 from dishka import FromDishka
@@ -19,14 +20,13 @@ from ai_response_generation_v2.application.use_cases import (
     ListConversationsUseCase,
 )
 from ai_response_generation_v2.presentation.api.rest.v1.schemas.chat import (
-    ChatCompletionRequest,
-    ChatCompletionResponse,
     ChatModelListResponse,
     ConversationCreateRequest,
     ConversationResponse,
     ConversationWithMessagesResponse,
     MessageCreateRequest,
     MessageResponse,
+    MessageWithReplyResponse,
 )
 from ai_response_generation_v2.presentation.services.ai_catalog import AICatalogService
 
@@ -48,7 +48,7 @@ async def create_conversation(
 ) -> ConversationResponse:
     dto = CreateConversationDTO(user_id=payload.user_id, title=payload.title)
     result = await use_case.execute(dto)
-    return ConversationResponse.model_validate(result)
+    return ConversationResponse.model_validate(dataclasses.asdict(result))
 
 
 @router.get("/conversations", response_model=list[ConversationResponse])
@@ -58,7 +58,7 @@ async def list_conversations(
     use_case: FromDishka[ListConversationsUseCase],
 ) -> list[ConversationResponse]:
     conversations = await use_case.execute(user_id)
-    return [ConversationResponse.model_validate(conversation) for conversation in conversations]
+    return [ConversationResponse.model_validate(dataclasses.asdict(conversation)) for conversation in conversations]
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationWithMessagesResponse)
@@ -69,47 +69,35 @@ async def get_conversation_history(
 ) -> ConversationWithMessagesResponse:
     result = await use_case.execute(conversation_id)
     return ConversationWithMessagesResponse(
-        conversation=ConversationResponse.model_validate(result.conversation),
-        messages=[MessageResponse.model_validate(message) for message in result.messages],
+        conversation=ConversationResponse.model_validate(dataclasses.asdict(result.conversation)),
+        messages=[MessageResponse.model_validate(dataclasses.asdict(message)) for message in result.messages],
     )
 
 
-@router.post("/conversations/{conversation_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/conversations/{conversation_id}/messages",
+    response_model=MessageWithReplyResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 @inject
-async def add_message(
+async def create_message_with_completion(
     conversation_id: UUID,
     payload: MessageCreateRequest,
-    use_case: FromDishka[AddMessageUseCase],
-) -> MessageResponse:
-    dto = CreateMessageDTO(
+    add_message_use_case: FromDishka[AddMessageUseCase],
+    history_use_case: FromDishka[GetConversationHistoryUseCase],
+    generate_use_case: FromDishka[GenerateResponseUseCase],
+) -> MessageWithReplyResponse:
+    history = await history_use_case.execute(conversation_id)
+    user_message_dto = CreateMessageDTO(
         conversation_id=conversation_id,
         role=_to_message_role(payload.role),
         content=payload.content,
         model=payload.model,
-        ai_type=payload.ai_type or "unknown",
+        provider=payload.provider,
+        instrument=payload.instrument,
         message_type=payload.message_type,
-    )
-    result = await use_case.execute(dto)
-    return MessageResponse.model_validate(result)
-
-
-@router.post("/conversations/{conversation_id}/messages:generate", response_model=ChatCompletionResponse)
-@inject
-async def generate_completion(
-    conversation_id: UUID,
-    payload: ChatCompletionRequest,
-    add_message_use_case: FromDishka[AddMessageUseCase],
-    history_use_case: FromDishka[GetConversationHistoryUseCase],
-    generate_use_case: FromDishka[GenerateResponseUseCase],
-) -> ChatCompletionResponse:
-    history = await history_use_case.execute(conversation_id)
-    user_message_dto = CreateMessageDTO(
-        conversation_id=conversation_id,
-        role=_to_message_role(payload.message.role),
-        content=payload.message.content,
-        model=payload.message.model,
-        ai_type=payload.message.ai_type or payload.provider,
-        message_type=payload.message.message_type,
+        temperature=payload.temperature,
+        max_tokens=payload.max_tokens,
     )
 
     stored_user_message = await add_message_use_case.execute(user_message_dto)
@@ -131,15 +119,17 @@ async def generate_completion(
             role="assistant",
             content=assistant_message.content,
             model=assistant_message.model,
-            ai_type=assistant_message.ai_type,
+            provider=assistant_message.provider,
+            instrument=assistant_message.instrument,
             message_type=assistant_message.message_type,
+            temperature=assistant_message.temperature,
+            max_tokens=assistant_message.max_tokens,
         )
     )
 
-    return ChatCompletionResponse(
-        conversation=ConversationResponse.model_validate(history.conversation),
-        user_message=MessageResponse.model_validate(stored_user_message),
-        assistant_message=MessageResponse.model_validate(stored_assistant_message),
+    return MessageWithReplyResponse(
+        user_message=MessageResponse.model_validate(dataclasses.asdict(stored_user_message)),
+        assistant_message=MessageResponse.model_validate(dataclasses.asdict(stored_assistant_message)),
     )
 
 
