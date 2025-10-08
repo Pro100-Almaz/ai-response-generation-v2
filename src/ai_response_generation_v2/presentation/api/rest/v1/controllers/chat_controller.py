@@ -5,7 +5,7 @@ from uuid import UUID
 
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from ai_response_generation_v2.application.dtos import (
     CreateConversationDTO,
@@ -54,9 +54,12 @@ async def create_conversation(
 @router.get("/conversations", response_model=list[ConversationResponse])
 @inject
 async def list_conversations(
-    user_id: int,
+    request: Request,
     use_case: FromDishka[ListConversationsUseCase],
 ) -> list[ConversationResponse]:
+    claims = getattr(request.state, "user", None) or {}
+    user_id = claims.get("user_id") or claims.get("sub")
+
     conversations = await use_case.execute(user_id)
     return [ConversationResponse.model_validate(dataclasses.asdict(conversation)) for conversation in conversations]
 

@@ -25,8 +25,8 @@ class MessageCreateRequest(BaseModel):
     provider: AIProviderLiteral = Field("openai")
     instrument: AIInstrumentLiteral = Field("chat")
     message_type: MessageTypeLiteral = "text"
-    temperature: float | None = Field(None, ge=0, le=2)
-    max_tokens: int | None = Field(None, ge=1)
+    temperature: float | None = Field(None, ge=0, le=0.7)
+    max_tokens: int | None = Field(None, ge=320)
 
 
 class ConversationResponse(BaseModel):

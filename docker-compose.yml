@@ -29,6 +29,11 @@ x-app-environment: &app-environment
   BROKER_NEW_ARTIFACT_QUEUE: ${BROKER_NEW_ARTIFACT_QUEUE}
   PUBLISH_RETRIES: ${PUBLISH_RETRIES}
   PUBLISH_RETRY_BACKOFF: ${PUBLISH_RETRY_BACKOFF}
+  MONOLITH_BASE_URL: ${MONOLITH_BASE_URL}
+  MONOLITH_AUTH_AUDIENCE: ${MONOLITH_AUTH_AUDIENCE}
+  MONOLITH_AUTH_TIMEOUT: ${MONOLITH_AUTH_TIMEOUT}
+  MONOLITH_PUBLIC_KEY_PATH: ${MONOLITH_PUBLIC_KEY_PATH}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 x-app-dev-environment: &app-dev-environment
   ENVIRONMENT: ${ENVIRONMENT:-dev}
@@ -46,6 +51,11 @@ x-app-dev-environment: &app-dev-environment
   BROKER_NEW_ARTIFACT_QUEUE: ${BROKER_NEW_ARTIFACT_QUEUE}
   PUBLISH_RETRIES: ${PUBLISH_RETRIES}
   PUBLISH_RETRY_BACKOFF: ${PUBLISH_RETRY_BACKOFF}
+  MONOLITH_BASE_URL: ${MONOLITH_BASE_URL}
+  MONOLITH_AUTH_AUDIENCE: ${MONOLITH_AUTH_AUDIENCE}
+  MONOLITH_AUTH_TIMEOUT: ${MONOLITH_AUTH_TIMEOUT}
+  MONOLITH_PUBLIC_KEY_PATH: ${MONOLITH_PUBLIC_KEY_PATH}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 # Test environment configuration is handled individually per service
 
@@ -109,6 +119,8 @@ services:
     container_name: ai_response_generation_v2-app
     environment:
       <<: *app-environment
+    secrets:
+      - monolith_public_key
     depends_on:
 
       redis:
@@ -137,6 +149,8 @@ services:
     container_name: ai_response_generation_v2-app-dev
     environment:
       <<: *app-dev-environment
+    secrets:
+      - monolith_public_key
     depends_on:
 
       redis:
@@ -195,6 +209,10 @@ services:
       HTTP_TIMEOUT: ${HTTP_TIMEOUT}
       BROKER_URL: ${BROKER_URL}
       BROKER_NEW_ARTIFACT_QUEUE: ${BROKER_NEW_ARTIFACT_QUEUE}
+      MONOLITH_BASE_URL: ${MONOLITH_BASE_URL}
+      MONOLITH_AUTH_AUDIENCE: ${MONOLITH_AUTH_AUDIENCE}
+      MONOLITH_AUTH_TIMEOUT: ${MONOLITH_AUTH_TIMEOUT}
+      MONOLITH_PUBLIC_KEY_PATH: ${MONOLITH_PUBLIC_KEY_PATH}
       PUBLISH_RETRIES: ${PUBLISH_RETRIES}
       PUBLISH_RETRY_BACKOFF: ${PUBLISH_RETRY_BACKOFF}
     depends_on:
@@ -236,3 +254,7 @@ networks:
   apps-net:
     external: true
     name: apps-net
+
+secrets:
+  monolith_public_key:
+    file: ./secrets/monolith_public_key.pem

@@ -4,12 +4,14 @@ from dishka import Provider, Scope, provide
 from faststream.kafka import KafkaBroker
 from httpx import AsyncClient
 import redis.asyncio as redis
+from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
 )
 
 from ai_response_generation_v2.application.mappers import ArtifactMapper, ConversationMapper
+from ai_response_generation_v2.application.interfaces.auth import AuthorizationServiceProtocol
 from ai_response_generation_v2.application.use_cases.get_artifact import GetArtifactUseCase
 from ai_response_generation_v2.application.use_cases.conversation_use_cases import (
     AddMessageUseCase,
@@ -291,9 +293,14 @@ class AuthorizationProvider(Provider):
         self,
         settings: Settings,
         http_client: AsyncClient,
-    ) -> MonolithAuthorizationService:
-        with open(settings.monolith_public_key_path, "r", encoding="utf-8") as key_file:
-            public_key = key_file.read()
+    ) -> AuthorizationServiceProtocol:
+        try:
+            with open(settings.monolith_public_key_path, "rb") as key_file:
+                public_key = key_file.read()
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                f"Monolith public key not found at '{settings.monolith_public_key_path}'."
+            ) from exc
 
         return MonolithAuthorizationService(
             base_url=settings.monolith_base_url,

@@ -2,16 +2,16 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import structlog
-from dishka import AsyncContainer, Scope, make_async_container
+from dishka import AsyncContainer, make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ai_response_generation_v2.config.ioc.di import get_providers
 from ai_response_generation_v2.config.logging import setup_logging
-from ai_response_generation_v2.application.interfaces.auth import AuthorizationServiceProtocol
 from ai_response_generation_v2.presentation.api.rest.v1.routers import api_v1_router
 from ai_response_generation_v2.presentation.api.rest.v1.middlewares import AuthorizationMiddleware
+from ai_response_generation_v2.config.exceptions import install_exception_middleware
 
 setup_logging()
 logger = structlog.get_logger(__name__)
@@ -50,14 +50,16 @@ def create_app() -> FastAPI:
 
     setup_dishka(container, app)
 
-    @app.on_event("startup")
-    async def _register_auth_middleware() -> None:
-        authorizer = await container.get(AuthorizationServiceProtocol, scope=Scope.REQUEST)
-        app.add_middleware(
-            AuthorizationMiddleware,
-            authorizer=authorizer,
-            exempt_paths={"/api/v1/health"},
-        )
+    app.add_middleware(
+        AuthorizationMiddleware, # type: ignore
+        container=container,
+        exempt_paths={
+            "/api/v1/health",
+            "/api/v1/chat/models",
+        },
+    )
+
+    install_exception_middleware(app)
 
     app.include_router(api_v1_router, prefix="/api")
 

@@ -82,6 +82,7 @@ COPY --chown=appuser:appuser src/ ./src/
 COPY --chown=appuser:appuser alembic/ ./alembic/
 COPY --chown=appuser:appuser alembic.ini ./
 COPY --chown=appuser:appuser README.md ./
+COPY --chown=appuser:appuser secrets/ ./secrets/
 
 # install the project into the existing .venv now that sources are present
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
@@ -119,6 +120,7 @@ COPY --chown=appuser:appuser tests/ ./tests/
 COPY --chown=appuser:appuser docs/ ./docs/
 COPY --chown=appuser:appuser Makefile ./
 COPY --chown=appuser:appuser README.md ./
+COPY --chown=appuser:appuser secrets/ ./secrets/
 
 # install project with dev deps for hot reload/dev tools
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen
@@ -148,6 +150,7 @@ COPY --chown=appuser:appuser alembic/ ./alembic/
 COPY --chown=appuser:appuser alembic.ini ./
 COPY --chown=appuser:appuser Makefile ./
 COPY --chown=appuser:appuser README.md ./
+COPY --chown=appuser:appuser secrets/ ./secrets/
 
 # install project with dev/test deps
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen
