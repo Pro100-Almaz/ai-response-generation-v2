@@ -42,6 +42,9 @@ def create_app() -> FastAPI:
         allow_origins=[
             "http://localhost",
             "http://localhost:8080",
+            "https://www.project-x.space",
+            "https://project-x.space",
+            "https://api.project-x.space",
         ],
         allow_credentials=True,
         allow_methods=["*"],
