@@ -39,9 +39,9 @@ def create_app() -> FastAPI:
 
     app.add_middleware(  # type: ignore[call-arg]
         CORSMiddleware,  # type: ignore[arg-type]
-        allow_origins=["*"],
+        allow_origins=["http://localhost:3000", "https://project-x.space", "https://www.project-x.space"],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET","POST","PUT","DELETE","OPTIONS"],
         allow_headers=["*"],
     )
 
