@@ -39,13 +39,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(  # type: ignore[call-arg]
         CORSMiddleware,  # type: ignore[arg-type]
-        allow_origins=[
-            "http://localhost",
-            "http://localhost:8080",
-            "https://www.project-x.space",
-            "https://project-x.space",
-            "https://api.project-x.space",
-        ],
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
