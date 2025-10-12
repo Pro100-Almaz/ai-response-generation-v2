@@ -37,6 +37,15 @@ def create_app() -> FastAPI:
         openapi_url="/api/openapi.json",
     )
 
+    app.add_middleware(
+        AuthorizationMiddleware, # type: ignore
+        container=container,
+        exempt_paths={
+            "/api/v1/health",
+            "/api/v1/chat/models",
+        },
+    )
+
     app.add_middleware(  # type: ignore[call-arg]
         CORSMiddleware,  # type: ignore[arg-type]
         allow_origins=["http://localhost:3000", "https://project-x.space", "https://www.project-x.space"],
@@ -46,15 +55,6 @@ def create_app() -> FastAPI:
     )
 
     setup_dishka(container, app)
-
-    app.add_middleware(
-        AuthorizationMiddleware, # type: ignore
-        container=container,
-        exempt_paths={
-            "/api/v1/health",
-            "/api/v1/chat/models",
-        },
-    )
 
     install_exception_middleware(app)
 
