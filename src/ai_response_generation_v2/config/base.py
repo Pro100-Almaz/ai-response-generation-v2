@@ -72,6 +72,9 @@ class Settings(BaseSettings):
         alias="MONOLITH_PUBLIC_KEY_PATH",
     )
 
+    monolith_balance_timeout: float = Field(3.0, alias="MONOLITH_BALANCE_TIMEOUT")
+    monolith_balance_default_minimum: int = Field(1, alias="MONOLITH_BALANCE_DEFAULT_MINIMUM")
+
     cors_origins: list[str] = Field(
         ["http://localhost:3000", "http://localhost:8080"], alias="CORS_ORIGINS"
     )

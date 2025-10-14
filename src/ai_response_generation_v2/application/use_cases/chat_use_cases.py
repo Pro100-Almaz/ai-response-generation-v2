@@ -11,6 +11,7 @@ from ai_response_generation_v2.application.interfaces.ai import (
     AIChatClientFactoryProtocol,
     AIChatClientProtocol,
 )
+from ai_response_generation_v2.application.interfaces.balance import BalanceControlProtocol
 
 
 logger = structlog.get_logger(__name__)
@@ -19,6 +20,8 @@ logger = structlog.get_logger(__name__)
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GenerateResponseUseCase:
     ai_client_factory: AIChatClientFactoryProtocol
+    balance_control: BalanceControlProtocol
+    default_points_cost: int = 20
 
     async def execute(
         self,
@@ -37,9 +40,16 @@ class GenerateResponseUseCase:
             model=model,
         )
 
+        has_balance = await self.balance_control.check_points(
+            minimum_points=self.default_points_cost
+        )
+        if not has_balance:
+            logger.info("Insufficient balance for response generation")
+            raise PermissionError("Insufficient balance")
+
         messages = [*history, user_message]
         client: AIChatClientProtocol = self.ai_client_factory.get_client(provider, instrument)
-        return await client.generate_response(
+        response = await client.generate_response(
             messages=messages,
             model=model,
             temperature=temperature,
@@ -47,4 +57,9 @@ class GenerateResponseUseCase:
             provider=provider,
             instrument=instrument,
         )
+
+        deducted = await self.balance_control.deduct_points(self.default_points_cost)
+        if not deducted:
+            logger.warning("Failed to deduct points after response generation")
+        return response
 

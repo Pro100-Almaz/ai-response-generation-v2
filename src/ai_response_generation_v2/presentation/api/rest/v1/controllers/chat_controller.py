@@ -105,16 +105,22 @@ async def create_message_with_completion(
 
     stored_user_message = await add_message_use_case.execute(user_message_dto)
 
-    assistant_message = await generate_use_case.execute(
-        conversation_id=conversation_id,
-        history=list(history.messages),
-        user_message=stored_user_message,
-        model=payload.model or stored_user_message.model or "",
-        temperature=payload.temperature,
-        max_tokens=payload.max_tokens,
-        provider=payload.provider,
-        instrument=payload.instrument,
-    )
+    try:
+        assistant_message = await generate_use_case.execute(
+            conversation_id=conversation_id,
+            history=list(history.messages),
+            user_message=stored_user_message,
+            model=payload.model or stored_user_message.model or "",
+            temperature=payload.temperature,
+            max_tokens=payload.max_tokens,
+            provider=payload.provider,
+            instrument=payload.instrument,
+        )
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail=str(exc) or "Insufficient balance",
+        ) from exc
 
     stored_assistant_message = await add_message_use_case.execute(
         CreateMessageDTO(

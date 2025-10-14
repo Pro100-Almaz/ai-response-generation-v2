@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import (
 
 from ai_response_generation_v2.application.mappers import ArtifactMapper, ConversationMapper
 from ai_response_generation_v2.application.interfaces.auth import AuthorizationServiceProtocol
+from ai_response_generation_v2.application.interfaces.balance import BalanceControlProtocol
 from ai_response_generation_v2.application.use_cases.get_artifact import GetArtifactUseCase
 from ai_response_generation_v2.application.use_cases.conversation_use_cases import (
     AddMessageUseCase,
@@ -35,6 +36,7 @@ from ai_response_generation_v2.infrastructures.http.clients import (
 )
 from ai_response_generation_v2.infrastructures.ai.factory import AIChatClientFactory
 from ai_response_generation_v2.infrastructures.auth.service import MonolithAuthorizationService
+from ai_response_generation_v2.infrastructures.balance.balance import MonolithBalanceControl
 from ai_response_generation_v2.infrastructures.mappers.artifact import InfrastructureArtifactMapper
 from ai_response_generation_v2.infrastructures.openai.chat_client import OpenAIChatClient
 
@@ -260,8 +262,12 @@ class UseCaseProvider(Provider):
     def get_generate_response_use_case(
         self,
         ai_client_factory: AIChatClientFactory,
+        balance_control: BalanceControlProtocol,
     ) -> GenerateResponseUseCase:
-        return GenerateResponseUseCase(ai_client_factory=ai_client_factory)
+        return GenerateResponseUseCase(
+            ai_client_factory=ai_client_factory,
+            balance_control=balance_control,
+        )
 
 
 class OpenAIProvider(Provider):
@@ -308,4 +314,19 @@ class AuthorizationProvider(Provider):
             timeout=settings.monolith_auth_timeout,
             client=http_client,
             public_key=public_key,
+        )
+
+
+class BalanceProvider(Provider):
+    @provide(scope=Scope.APP)
+    def get_monolith_balance_control(
+        self,
+        settings: Settings,
+        http_client: AsyncClient,
+    ) -> BalanceControlProtocol:
+        return MonolithBalanceControl(
+            base_url=settings.monolith_base_url,
+            timeout=settings.monolith_balance_timeout,
+            client=http_client,
+            default_minimum_points=settings.monolith_balance_default_minimum,
         )
