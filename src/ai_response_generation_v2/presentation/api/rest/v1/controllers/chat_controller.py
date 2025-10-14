@@ -43,10 +43,14 @@ def _to_message_role(role: str) -> MessageRole:
 @router.post("/conversations", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)
 @inject
 async def create_conversation(
+    request: Request,
     payload: ConversationCreateRequest,
     use_case: FromDishka[CreateConversationUseCase],
 ) -> ConversationResponse:
-    dto = CreateConversationDTO(user_id=payload.user_id, title=payload.title)
+    claims = getattr(request.state, "user", None) or {}
+    user_id = claims.get("user_id") or claims.get("sub")
+
+    dto = CreateConversationDTO(user_id=user_id, title=payload.title)
     result = await use_case.execute(dto)
     return ConversationResponse.model_validate(dataclasses.asdict(result))
 
