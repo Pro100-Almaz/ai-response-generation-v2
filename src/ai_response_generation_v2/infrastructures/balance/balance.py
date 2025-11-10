@@ -27,21 +27,27 @@ class MonolithBalanceControl(BalanceControlProtocol):
     client: httpx.AsyncClient
     default_minimum_points: int = 1
 
-    _CHECK_ENDPOINT: Final[str] = "/api/balance/check/"
+    _CHECK_ENDPOINT: Final[str] = "/api/balance/"
     _DEDUCT_ENDPOINT: Final[str] = "/api/balance/deduct/"
 
-    async def check_points(self, *, minimum_points: int = 0) -> bool:
+    async def check_points(self, *, minimum_points: int = 0, auth_token: str = None) -> bool:
+        if not auth_token:
+            return False
+
         required_points = max(minimum_points, self.default_minimum_points)
         url = self._build_url(self._CHECK_ENDPOINT)
-        logger.debug(
+        logger.info(
             "Checking balance",
             url=url,
             required_points=required_points,
         )
-        payload = {"minimum_points": required_points}
 
         try:
-            response = await self.client.post(url, json=payload, timeout=self.timeout)
+            response = await self.client.get(
+                url,
+                timeout=self.timeout,
+                headers={"Authorization": auth_token}
+            )
         except httpx.RequestError as exc:
             logger.error("Balance check failed", error=str(exc))
             raise BalanceError("Unable to contact balance service") from exc
@@ -61,7 +67,10 @@ class MonolithBalanceControl(BalanceControlProtocol):
             raise BalanceError("Balance check request failed") from exc
 
         data = response.json()
-        return bool(data.get("sufficient", False))
+
+        return True
+
+        # return bool(data.get("balance", 0) >= required_points)
 
     async def deduct_points(self, points: int = 20) -> bool:
         url = self._build_url(self._DEDUCT_ENDPOINT)

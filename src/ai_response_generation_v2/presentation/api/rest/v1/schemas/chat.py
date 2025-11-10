@@ -67,16 +67,62 @@ class ChatCompletionResponse(BaseModel):
     assistant_message: MessageResponse
 
 
-class ChatModelInstrumentResponse(BaseModel):
-    name: AIInstrumentLiteral
-    models: list[str]
+class ChatModelResponse(BaseModel):
+    id: UUID
+    name: str
+    display_name: str
+    description: str | None = None
+    avatar_url: str | None = None
+
+
+class ChatModelTypeResponse(BaseModel):
+    id: UUID
+    identifier: str
+    display_name: str
+    description: str | None = None
+    avatar_url: str | None = None
+    models: list[ChatModelResponse]
 
 
 class ChatModelProviderResponse(BaseModel):
-    name: AIProviderLiteral
-    instruments: list[ChatModelInstrumentResponse]
+    id: UUID
+    name: str
+    display_name: str
+    description: str | None = None
+    avatar_url: str | None = None
+    types: list[ChatModelTypeResponse]
 
 
 class ChatModelListResponse(BaseModel):
     providers: list[ChatModelProviderResponse]
+
+
+class ChatModelCreateModelPayload(BaseModel):
+    id: UUID
+    name: str
+    display_name: str
+    description: str | None = None
+    avatar_url: str | None = None
+
+
+class ChatModelCreateTypePayload(BaseModel):
+    id: UUID
+    identifier: str
+    display_name: str
+    description: str | None = None
+    avatar_url: str | None = None
+    models: list[ChatModelCreateModelPayload]
+
+
+class ChatModelCreateProviderPayload(BaseModel):
+    id: UUID
+    name: str
+    display_name: str
+    description: str | None = None
+    avatar_url: str | None = None
+    types: list[ChatModelCreateTypePayload]
+
+
+class ChatModelCreateRequest(BaseModel):
+    provider: ChatModelCreateProviderPayload
 

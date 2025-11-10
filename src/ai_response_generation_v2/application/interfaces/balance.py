@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 class BalanceControlProtocol(ABC):
     @abstractmethod
-    async def check_points(self, *, minimum_points: int = 0) -> bool:
+    async def check_points(self, *, minimum_points: int = 0, auth_token: str = None) -> bool:
         """Return True if the user has at least ``minimum_points`` (defaults to a non-zero balance)."""
 
     @abstractmethod

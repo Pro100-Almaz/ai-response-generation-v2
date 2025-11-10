@@ -33,6 +33,7 @@ class GenerateResponseUseCase:
         max_tokens: int | None = None,
         provider: str = "openai",
         instrument: str = "chat",
+        auth_token: str | None = None,
     ) -> MessageDTO:
         logger.info(
             "Generating response",
@@ -41,7 +42,8 @@ class GenerateResponseUseCase:
         )
 
         has_balance = await self.balance_control.check_points(
-            minimum_points=self.default_points_cost
+            auth_token = auth_token,
+            minimum_points=self.default_points_cost,
         )
         if not has_balance:
             logger.info("Insufficient balance for response generation")

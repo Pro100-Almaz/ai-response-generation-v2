@@ -142,35 +142,35 @@ services:
       start_period: 40s
     networks: [apps-net]
 
-  app-dev:
-    build:
-      <<: *app-build
-      target: development
-    container_name: ai_response_generation_v2-app-dev
-    environment:
-      <<: *app-dev-environment
-    secrets:
-      - monolith_public_key
-    depends_on:
-
-      redis:
-        condition: service_healthy
-
-      rabbitmq:
-        condition: service_healthy
-
-    ports:
-      - "8001:8000"
-    volumes:
-      - ./src:/app/src:ro
-      - ./tests:/app/tests:ro
-      - ./alembic:/app/alembic:ro
-      - ./alembic.ini:/app/alembic.ini:ro
-      - app_logs:/app/logs
-    restart: unless-stopped
-    networks: [apps-net]
-    profiles:
-      - dev
+#  app-dev:
+#    build:
+#      <<: *app-build
+#      target: development
+#    container_name: ai_response_generation_v2-app-dev
+#    environment:
+#      <<: *app-dev-environment
+#    secrets:
+#      - monolith_public_key
+#    depends_on:
+#
+#      redis:
+#        condition: service_healthy
+#
+#      rabbitmq:
+#        condition: service_healthy
+#
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - ./src:/app/src:ro
+#      - ./tests:/app/tests:ro
+#      - ./alembic:/app/alembic:ro
+#      - ./alembic.ini:/app/alembic.ini:ro
+#      - app_logs:/app/logs
+#    restart: unless-stopped
+#    networks: [apps-net]
+#    profiles:
+#      - dev
 
 
   migrate:

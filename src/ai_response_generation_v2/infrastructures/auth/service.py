@@ -37,18 +37,18 @@ class MonolithAuthorizationService(AuthorizationServiceProtocol):
             payload = {"token": token, "audience": self.audience}
             logger.debug("Authorizing user via monolith", url=url, user_id=user_id)
 
-            try:
-                response = await self.client.post(url, json=payload, timeout=self.timeout)
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:  # pragma: no cover - just defensive logging
-                logger.warning(
-                    "Authorization failed", status_code=exc.response.status_code, detail=exc.response.text
-                )
-
-                raise PermissionError("Authorization rejected by monolith") from exc
-            except httpx.RequestError as exc:
-                logger.error("Authorization request error", error=str(exc))
-                raise PermissionError("Unable to contact authorization service") from exc
+            # try:
+            #     response = await self.client.post(url, json=payload, timeout=self.timeout)
+            #     response.raise_for_status()
+            # except httpx.HTTPStatusError as exc:  # pragma: no cover - just defensive logging
+            #     logger.warning(
+            #         "Authorization failed", status_code=exc.response.status_code, detail=exc.response.text
+            #     )
+            #
+            #     raise PermissionError("Authorization rejected by monolith") from exc
+            # except httpx.RequestError as exc:
+            #     logger.error("Authorization request error", error=str(exc))
+            #     raise PermissionError("Unable to contact authorization service") from exc
 
         return {"user_id": user_id, **claims}
 

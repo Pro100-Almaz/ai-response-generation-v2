@@ -1,34 +1,48 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from ai_response_generation_v2.config.base import Settings
+from ai_response_generation_v2.application.use_cases.model_catalog import ListAIModelCatalogUseCase
 
 
 @dataclass(slots=True)
 class AICatalogService:
-    settings: Settings = field(default_factory=Settings)
+    list_catalog_use_case: ListAIModelCatalogUseCase
 
-    def list_models(self) -> dict:
-        chat_models = [
-            model.strip()
-            for model in self.settings.openai_available_models.split(",")
-            if model.strip()
-        ]
-        return {
-            "providers": [
-                {
-                    "name": "openai",
-                    "instruments": [
-                        {
-                            "name": "chat",
-                            "models": chat_models,
-                        }
-                    ],
+    async def list_models(self) -> dict:
+        providers = await self.list_catalog_use_case.execute()
+        payload_providers: list[dict] = []
+        for provider in providers:
+            provider_payload = {
+                "id": provider.id,
+                "name": provider.name,
+                "display_name": provider.display_name,
+                "description": provider.description,
+                "avatar_url": provider.avatar_url,
+                "types": [],
+            }
+            for model_type in provider.types:
+                type_payload = {
+                    "id": model_type.id,
+                    "identifier": model_type.identifier,
+                    "display_name": model_type.display_name,
+                    "description": model_type.description,
+                    "avatar_url": model_type.avatar_url,
+                    "models": [],
                 }
-            ]
-        }
+                for model in model_type.models:
+                    type_payload["models"].append(
+                        {
+                            "id": model.id,
+                            "name": model.name,
+                            "display_name": model.display_name,
+                            "description": model.description,
+                            "avatar_url": model.avatar_url,
+                        }
+                    )
+                provider_payload["types"].append(type_payload)
 
-    def default_provider(self) -> str:
-        return self.settings.enabled_ai_providers[0]
+            payload_providers.append(provider_payload)
+
+        return {"providers": payload_providers}
 

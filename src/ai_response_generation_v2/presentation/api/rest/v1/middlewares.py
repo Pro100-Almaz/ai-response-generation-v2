@@ -42,5 +42,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             **claims,
         }
 
+        request.state.auth_token = auth_header
+
         return await call_next(request)
 

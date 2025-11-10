@@ -14,12 +14,16 @@ from ai_response_generation_v2.application.dtos import (
 )
 from ai_response_generation_v2.application.use_cases import (
     AddMessageUseCase,
+    CreateAIModelUseCase,
     CreateConversationUseCase,
     GenerateResponseUseCase,
     GetConversationHistoryUseCase,
+    GetOrCreateProviderUseCase,
+    GetOrCreateTypeUseCase,
     ListConversationsUseCase,
 )
 from ai_response_generation_v2.presentation.api.rest.v1.schemas.chat import (
+    ChatModelCreateRequest,
     ChatModelListResponse,
     ConversationCreateRequest,
     ConversationResponse,
@@ -29,6 +33,12 @@ from ai_response_generation_v2.presentation.api.rest.v1.schemas.chat import (
     MessageWithReplyResponse,
 )
 from ai_response_generation_v2.presentation.services.ai_catalog import AICatalogService
+from ai_response_generation_v2.domain.entities.model_catalog import (
+    AIModelEntity,
+    AIModelProviderEntity,
+    AIModelTypeEntity,
+)
+from ai_response_generation_v2.application.interfaces.auth import AuthorizationServiceProtocol
 
 
 router = APIRouter(prefix="/v1/chat", tags=["Chat"])
@@ -84,6 +94,7 @@ async def get_conversation_history(
 )
 @inject
 async def create_message_with_completion(
+    request: Request,
     conversation_id: UUID,
     payload: MessageCreateRequest,
     add_message_use_case: FromDishka[AddMessageUseCase],
@@ -104,6 +115,8 @@ async def create_message_with_completion(
     )
 
     stored_user_message = await add_message_use_case.execute(user_message_dto)
+
+    auth_token = getattr(request.state, "auth_token", None) or {}
 
     try:
         assistant_message = await generate_use_case.execute(
@@ -143,6 +156,90 @@ async def create_message_with_completion(
 
 
 @router.get("/models", response_model=ChatModelListResponse)
-async def list_models() -> ChatModelListResponse:
-    return ChatModelListResponse.model_validate(AICatalogService().list_models())
+@inject
+async def list_models(
+    catalog_service: FromDishka[AICatalogService],
+) -> ChatModelListResponse:
+    catalog_payload = await catalog_service.list_models()
+    return ChatModelListResponse.model_validate(catalog_payload)
+
+
+@router.post(
+    "/models",
+    status_code=status.HTTP_201_CREATED,
+)
+@inject
+async def create_models(
+    request: Request,
+    payload: ChatModelCreateRequest,
+    get_or_create_provider_use_case: FromDishka[GetOrCreateProviderUseCase],
+    get_or_create_type_use_case: FromDishka[GetOrCreateTypeUseCase],
+    create_use_case: FromDishka[CreateAIModelUseCase],
+) -> None:
+    claims = getattr(request.state, "user", {})
+    roles = claims.get("roles")
+    if roles is None:
+        roles = []
+    elif isinstance(roles, str):
+        roles = [roles]
+
+    if "tool_creator" not in set(roles):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions",
+        )
+
+    provider_payload = payload.provider
+    if not provider_payload.types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provider types are required",
+        )
+
+    # Get or create provider (will use existing ID if found by name, or create with provided ID)
+    provider_entity = await get_or_create_provider_use_case.execute(
+        provider_id=provider_payload.id,
+        name=provider_payload.name,
+        display_name=provider_payload.display_name,
+        description=provider_payload.description,
+        avatar_url=provider_payload.avatar_url,
+    )
+
+    for type_payload in provider_payload.types:
+        if not type_payload.models:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Type '{type_payload.identifier}' must include at least one model",
+            )
+
+        # Get or create type (will use existing ID if found by identifier, or create with provided ID)
+        try:
+            type_entity = await get_or_create_type_use_case.execute(
+                type_id=type_payload.id,
+                provider_id=provider_entity.id,  # Use the actual provider ID (may differ from payload)
+                identifier=type_payload.identifier,
+                display_name=type_payload.display_name,
+                description=type_payload.description,
+                avatar_url=type_payload.avatar_url,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            ) from exc
+
+        for model_payload in type_payload.models:
+            model_entity = AIModelEntity(
+                id=model_payload.id,
+                type_id=type_entity.id,  # Use the actual type ID (may differ from payload)
+                name=model_payload.name,
+                display_name=model_payload.display_name,
+                description=model_payload.description,
+                avatar_url=model_payload.avatar_url,
+            )
+            await create_use_case.execute(
+                provider=provider_entity,
+                model_type=type_entity,
+                model=model_entity,
+            )
 

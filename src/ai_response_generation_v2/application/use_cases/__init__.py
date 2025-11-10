@@ -6,6 +6,12 @@ from ai_response_generation_v2.application.use_cases.conversation_use_cases impo
     ListConversationsUseCase,
 )
 from ai_response_generation_v2.application.use_cases.get_artifact import GetArtifactUseCase
+from ai_response_generation_v2.application.use_cases.model_catalog import (
+    CreateAIModelUseCase,
+    GetOrCreateProviderUseCase,
+    GetOrCreateTypeUseCase,
+    ListAIModelCatalogUseCase,
+)
 
 __all__ = [
     "GenerateResponseUseCase",
@@ -14,5 +20,9 @@ __all__ = [
     "GetConversationHistoryUseCase",
     "ListConversationsUseCase",
     "GetArtifactUseCase",
+    "ListAIModelCatalogUseCase",
+    "CreateAIModelUseCase",
+    "GetOrCreateProviderUseCase",
+    "GetOrCreateTypeUseCase",
 ]
 

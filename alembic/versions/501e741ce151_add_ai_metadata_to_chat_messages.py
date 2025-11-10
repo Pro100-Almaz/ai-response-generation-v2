@@ -35,8 +35,11 @@ def upgrade() -> None:
     sa.Column('role', sa.String(length=32), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('model', sa.String(length=128), nullable=True),
-    sa.Column('ai_type', sa.String(length=64), nullable=False),
+    sa.Column('provider', sa.String(length=64), nullable=False),
+    sa.Column('instrument', sa.String(length=32), nullable=False),
     sa.Column('message_type', sa.String(length=32), nullable=False),
+    sa.Column('temperature', sa.Float(), nullable=True),
+    sa.Column('max_tokens', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')

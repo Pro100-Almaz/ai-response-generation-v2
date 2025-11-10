@@ -14,6 +14,12 @@ from ai_response_generation_v2.application.mappers import ArtifactMapper, Conver
 from ai_response_generation_v2.application.interfaces.auth import AuthorizationServiceProtocol
 from ai_response_generation_v2.application.interfaces.balance import BalanceControlProtocol
 from ai_response_generation_v2.application.use_cases.get_artifact import GetArtifactUseCase
+from ai_response_generation_v2.application.use_cases.model_catalog import (
+    CreateAIModelUseCase,
+    GetOrCreateProviderUseCase,
+    GetOrCreateTypeUseCase,
+    ListAIModelCatalogUseCase,
+)
 from ai_response_generation_v2.application.use_cases.conversation_use_cases import (
     AddMessageUseCase,
     CreateConversationUseCase,
@@ -25,6 +31,9 @@ from ai_response_generation_v2.config.base import Settings
 from ai_response_generation_v2.infrastructures.broker.publisher import KafkaPublisher
 from ai_response_generation_v2.infrastructures.cache.redis_client import RedisCacheClient
 from ai_response_generation_v2.infrastructures.db.repositories.artifact import ArtifactRepositorySQLAlchemy
+from ai_response_generation_v2.infrastructures.db.repositories.model_catalog import (
+    AIModelCatalogRepositorySQLAlchemy,
+)
 from ai_response_generation_v2.infrastructures.db.repositories.conversation import (
     ConversationRepositorySQLAlchemy,
     MessageRepositorySQLAlchemy,
@@ -39,6 +48,7 @@ from ai_response_generation_v2.infrastructures.auth.service import MonolithAutho
 from ai_response_generation_v2.infrastructures.balance.balance import MonolithBalanceControl
 from ai_response_generation_v2.infrastructures.mappers.artifact import InfrastructureArtifactMapper
 from ai_response_generation_v2.infrastructures.openai.chat_client import OpenAIChatClient
+from ai_response_generation_v2.presentation.services.ai_catalog import AICatalogService
 
 
 class SettingsProvider(Provider):
@@ -106,6 +116,12 @@ class RepositoryProvider(Provider):
     ) -> MessageRepositorySQLAlchemy:
         return MessageRepositorySQLAlchemy(session=session)
 
+    @provide(scope=Scope.REQUEST)
+    def get_ai_model_catalog_repository(
+        self, session: AsyncSession
+    ) -> AIModelCatalogRepositorySQLAlchemy:
+        return AIModelCatalogRepositorySQLAlchemy(session=session)
+
 
 class UnitOfWorkProvider(Provider):
     @provide(scope=Scope.REQUEST)
@@ -161,6 +177,13 @@ class ServiceProvider(Provider):
             broker=broker,
             mapper=infrastructure_mapper,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_ai_catalog_service(
+        self,
+        list_ai_model_catalog_use_case: ListAIModelCatalogUseCase,
+    ) -> AICatalogService:
+        return AICatalogService(list_catalog_use_case=list_ai_model_catalog_use_case)
 
 
 class MapperProvider(Provider):
@@ -268,6 +291,34 @@ class UseCaseProvider(Provider):
             ai_client_factory=ai_client_factory,
             balance_control=balance_control,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_list_ai_model_catalog_use_case(
+        self,
+        ai_model_catalog_repository: AIModelCatalogRepositorySQLAlchemy,
+    ) -> ListAIModelCatalogUseCase:
+        return ListAIModelCatalogUseCase(repository=ai_model_catalog_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def get_create_ai_model_use_case(
+        self,
+        ai_model_catalog_repository: AIModelCatalogRepositorySQLAlchemy,
+    ) -> CreateAIModelUseCase:
+        return CreateAIModelUseCase(repository=ai_model_catalog_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def get_get_or_create_provider_use_case(
+        self,
+        ai_model_catalog_repository: AIModelCatalogRepositorySQLAlchemy,
+    ) -> GetOrCreateProviderUseCase:
+        return GetOrCreateProviderUseCase(repository=ai_model_catalog_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def get_get_or_create_type_use_case(
+        self,
+        ai_model_catalog_repository: AIModelCatalogRepositorySQLAlchemy,
+    ) -> GetOrCreateTypeUseCase:
+        return GetOrCreateTypeUseCase(repository=ai_model_catalog_repository)
 
 
 class OpenAIProvider(Provider):

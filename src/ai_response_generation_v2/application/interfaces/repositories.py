@@ -6,6 +6,9 @@ from ai_response_generation_v2.domain.entities import (
     ArtifactEntity,
     ConversationEntity,
     MessageEntity,
+    AIModelEntity,
+    AIModelProviderEntity,
+    AIModelTypeEntity,
 )
 
 
@@ -35,3 +38,18 @@ class MessageRepositoryProtocol(Protocol):
     async def add_message(self, message: MessageEntity) -> None: ...
 
     async def bulk_create(self, messages: Sequence[MessageEntity]) -> None: ...
+
+
+class AIModelCatalogRepositoryProtocol(Protocol):
+    async def list_catalog(self) -> Sequence[AIModelProviderEntity]: ...
+
+    async def get_provider_by_name(self, name: str) -> AIModelProviderEntity | None: ...
+
+    async def get_type_by_identifier(self, identifier: str) -> AIModelTypeEntity | None: ...
+
+    async def create_catalog_entries(
+        self,
+        provider: AIModelProviderEntity,
+        model_type: AIModelTypeEntity,
+        model: AIModelEntity,
+    ) -> None: ...
