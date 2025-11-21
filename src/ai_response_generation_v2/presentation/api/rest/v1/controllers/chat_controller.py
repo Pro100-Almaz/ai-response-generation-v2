@@ -128,6 +128,7 @@ async def create_message_with_completion(
             max_tokens=payload.max_tokens,
             provider=payload.provider,
             instrument=payload.instrument,
+            auth_token=auth_token
         )
     except PermissionError as exc:
         raise HTTPException(

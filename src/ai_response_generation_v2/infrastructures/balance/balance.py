@@ -67,22 +67,27 @@ class MonolithBalanceControl(BalanceControlProtocol):
             raise BalanceError("Balance check request failed") from exc
 
         data = response.json()
+        balance = float(data["balance"])
 
-        return True
+        # return true if balance is bigger else false
+        return balance >= required_points
 
-        # return bool(data.get("balance", 0) >= required_points)
-
-    async def deduct_points(self, points: int = 20) -> bool:
+    async def deduct_points(self, points: int = 20, auth_token: str = None) -> bool:
         url = self._build_url(self._DEDUCT_ENDPOINT)
         logger.debug(
             "Deducting points",
             url=url,
             points=points,
         )
-        payload = {"points": points}
+        payload = {"amount": points}
 
         try:
-            response = await self.client.post(url, json=payload, timeout=self.timeout)
+            response = await self.client.post(
+                url = url,
+                headers = {"Authorization": auth_token},
+                json = payload,
+                timeout = self.timeout
+            )
         except httpx.RequestError as exc:
             logger.error("Point deduction failed", error=str(exc))
             raise BalanceError("Unable to contact balance service") from exc
@@ -102,7 +107,7 @@ class MonolithBalanceControl(BalanceControlProtocol):
             raise BalanceError("Point deduction request failed") from exc
 
         data = response.json()
-        return bool(data.get("deducted", False))
+        return data["txn_type"] == "DEDUCT"
 
     def _build_url(self, endpoint: str) -> str:
         return f"{self.base_url.rstrip('/')}{endpoint}" if self.base_url else endpoint

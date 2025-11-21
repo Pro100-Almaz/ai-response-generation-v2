@@ -60,7 +60,10 @@ class GenerateResponseUseCase:
             instrument=instrument,
         )
 
-        deducted = await self.balance_control.deduct_points(self.default_points_cost)
+        deducted = await self.balance_control.deduct_points(
+            self.default_points_cost,
+            auth_token = auth_token,
+        )
         if not deducted:
             logger.warning("Failed to deduct points after response generation")
         return response
